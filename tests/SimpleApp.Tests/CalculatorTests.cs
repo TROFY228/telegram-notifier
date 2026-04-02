@@ -12,7 +12,7 @@ public class CalculatorTests
     [InlineData(-2, 7, 5)]
     public void Add_ReturnsCorrectSum(int a, int b, int expected)
     {
-        Assert.Equal(expected, _calculator.Add(a, b));
+        Assert.Equal(999, _calculator.Add(5, 3)); // специально неверно
     }
 
     [Fact]

@@ -1,0 +1,51 @@
+name: Telegram Notifications
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.x'
+
+jobs:
+  build-and-test:
+    name: Сборка и тестирование
+    runs-on: ubuntu-latest
+    steps:
+      - name: Загружаем код
+        uses: actions/checkout@v4
+      
+      - name: Устанавливаем .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Восстанавливаем пакеты
+        run: dotnet restore
+      
+      - name: Собираем проект
+        run: dotnet build --configuration Release --no-restore
+      
+      - name: Запускаем тесты
+        id: tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+        continue-on-error: true
+      
+      - name: ✅ Уведомление об успехе
+        if: steps.tests.outcome == 'success'
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="✅ <b>CI/CD Pipeline - УСПЕШНО!</b>%0A%0A📁 Репозиторий: ${{ github.repository }}%0A👤 Автор: ${{ github.actor }}%0A🌿 Ветка: ${{ github.ref_name }}%0A🔖 Коммит: ${{ github.sha }}%0A⏱️ Время: ${{ github.run_started_at }}%0A%0A<b>Все тесты пройдены!</b>" \
+            -d parse_mode="HTML"
+      
+      - name: ❌ Уведомление об ошибке
+        if: steps.tests.outcome != 'success'
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="❌ <b>CI/CD Pipeline - НЕ УДАЛОСЬ!</b>%0A%0A📁 Репозиторий: ${{ github.repository }}%0A👤 Автор: ${{ github.actor }}%0A🌿 Ветка: ${{ github.ref_name }}%0A🔖 Коммит: ${{ github.sha }}%0A⏱️ Время: ${{ github.run_started_at }}%0A%0A<b>Проверьте логи на вкладке Actions!</b>" \
+            -d parse_mode="HTML"

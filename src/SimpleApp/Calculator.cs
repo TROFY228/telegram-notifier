@@ -26,4 +26,4 @@ public class Calculator
             if (number % i == 0) return false;
         return true;
     }
-}
+}// test
